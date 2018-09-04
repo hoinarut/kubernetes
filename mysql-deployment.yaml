@@ -12,6 +12,19 @@ spec:
   - port: 3306
   clusterIP: None
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  labels:
+    app: wordpress
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,9 +49,24 @@ spec:
         name: mysql
         env:
           - name: MYSQL_ROOT_PASSWORD
-            value: root   
+            valueFrom:
+              secretKeyRef:
+                name: mysql-pass
+                key: password 
         ports:
         - containerPort: 3306
           name: mysql
+        volumeMounts:
+          - name: mysql-persistent-storage
+            mountPath: /var/lib/mysql
+          - name: secret-storage
+            mountPath: /etc/secretStore
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
+      - name: secret-storage
+        secret:
+          secretName: mysql-pass
 
     
